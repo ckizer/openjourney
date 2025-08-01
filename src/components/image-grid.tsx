@@ -90,19 +90,18 @@ export function ImageGrid({ generation, onViewFullscreen }: ImageGridProps) {
               transition={{ duration: 0.3, delay: index * 0.1 }}
             >
               <Card 
-                className="relative group cursor-pointer bg-muted/50 border-border/50 hover:shadow-lg transition-all duration-300 overflow-hidden"
+                className="relative group cursor-pointer bg-muted/50 border-border/50 hover:shadow-lg transition-all duration-300 overflow-hidden aspect-square p-0"
                 onMouseEnter={() => setHoveredIndex(index)}
                 onMouseLeave={() => setHoveredIndex(null)}
                 onClick={() => handleViewFullscreen(index)}
               >
-                <div className="aspect-square relative">
-                  <Image
-                    src={imageData.url}
-                    alt={`Generated image ${index + 1}`}
-                    fill
-                    className="object-cover rounded-lg"
-                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                  />
+                <Image
+                  src={imageData.url}
+                  alt={`Generated image ${index + 1}`}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                />
                   
                   {/* Hover overlay */}
                   <div className={`absolute inset-0 bg-black/50 backdrop-blur-[1px] transition-opacity duration-300 ${
@@ -138,7 +137,6 @@ export function ImageGrid({ generation, onViewFullscreen }: ImageGridProps) {
                       </Button>
                     </div>
                   </div>
-                </div>
               </Card>
             </motion.div>
           ))}

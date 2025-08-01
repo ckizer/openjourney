@@ -162,17 +162,6 @@ export function SettingsDropdown() {
             />
           </div>
 
-          {/* GitHub Section */}
-          <div className="space-y-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => window.open("https://github.com/ammaarreshi/openjourney", "_blank")}
-              className="w-full text-sm"
-            >
-              Fork and remix on GitHub
-            </Button>
-          </div>
         </div>
       </DropdownMenuContent>
     </DropdownMenu>
