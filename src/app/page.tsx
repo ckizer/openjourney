@@ -5,16 +5,13 @@ import { ContentGrid } from "@/components/content-grid";
 import { useState, useCallback } from "react";
 
 export default function Home() {
-  const [generateHandler, setGenerateHandler] = useState<((type: "image" | "video", prompt: string) => void) | null>(null);
+  const [generateHandler, setGenerateHandler] = useState<((prompt: string) => void) | null>(null);
 
 
-  const handleSetGenerator = useCallback((handler: (type: "image" | "video", prompt: string) => void) => {
+  const handleSetGenerator = useCallback((handler: (prompt: string) => void) => {
     setGenerateHandler(() => handler);
   }, []);
 
-  const handleSetImageToVideo = useCallback(() => {
-    // Handler is set up in ContentGrid component
-  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -27,7 +24,6 @@ export default function Home() {
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <ContentGrid 
           onNewGeneration={handleSetGenerator}
-          onImageToVideo={handleSetImageToVideo}
         />
       </main>
     </div>

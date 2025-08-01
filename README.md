@@ -1,22 +1,18 @@
 # Openjourney - MidJourney UI clone
 
-A high-fidelity, open-source clone of the MidJourney web interface built with Next.js 15, featuring real AI image and video generation powered by Google's Gemini SDK. Use Imagen 4 to generate images and Veo 2 and 3 for image and text to video with audio.
+A high-fidelity, open-source clone of the MidJourney web interface built with Next.js 15, featuring real AI image generation powered by OpenAI's GPT-4o image generation model.
 
-OR extend and bring your favorite models to the same experience.
+Perfect for creating high-quality AI-generated images with a beautiful, intuitive interface.
 
 ![openjourney-ui](https://github.com/user-attachments/assets/392da5a8-d121-4f71-83f7-dfca20a267af)
 
 ## ✨ Features
 
 ### 🎨 **AI Image Generation**
-- **Imagen 4** integration for high-quality image generation
+- **OpenAI GPT-4o** integration for high-quality image generation
 - **4-image grid layout** matching MidJourney's design
 - **Real-time generation** with loading animations
-
-### 🎬 **AI Video Generation**
-- **Veo 3** text-to-video generation
-- **Veo 2** image-to-video conversion
-- **2x2 video grid** with autoplay on hover
+- **Parallel generation** for faster results
 
 ### 🚀 **Interactive features**
 - **Download** generated images and videos
@@ -39,7 +35,7 @@ OR extend and bring your favorite models to the same experience.
 
 - **Node.js 18+** (20+ recommended)
 - **npm** or **yarn**
-- **Google AI API Key** (free tier available)
+- **OpenAI API Key** (pay-per-use)
 
 ## 🚀 Quick Start
 
@@ -56,14 +52,13 @@ npm install
 Create `.env.local`:
 
 ```env
-GOOGLE_AI_API_KEY=your_google_ai_api_key_here
+OPENAI_API_KEY=your_openai_api_key_here
 ```
 
 **Get your API key:**
-1. Visit [Google AI Studio](https://aistudio.google.com/app/apikey)
-2. Create a new project or select existing
-3. Generate an API key
-4. Copy and paste into `.env.local`
+1. Visit [OpenAI Platform](https://platform.openai.com/api-keys)
+2. Create a new API key
+3. Copy and paste into `.env.local`
 
 ### 3. Development Server
 
@@ -176,7 +171,7 @@ docker run -p 3000:3000 openjourney
 ```
 
 ### **Environment Variables**
-Make sure to set `GOOGLE_AI_API_KEY` in your deployment platform or you can enter your key in the app.
+Make sure to set `OPENAI_API_KEY` in your deployment platform or you can enter your key in the app.
 
 ## 🤝 Contributing
 

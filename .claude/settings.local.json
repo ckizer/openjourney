@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(rm:*)",
+      "Bash(npm remove:*)",
+      "Bash(npm run build:*)",
+      "WebFetch(domain:platform.openai.com)"
+    ],
+    "deny": []
+  }
+}

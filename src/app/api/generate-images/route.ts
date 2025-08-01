@@ -1,58 +1,109 @@
-import { GoogleGenAI } from "@google/genai";
-import { NextRequest, NextResponse } from "next/server";
+import OpenAI from "openai";
+import { NextRequest } from "next/server";
 
 export async function POST(request: NextRequest) {
   try {
     const { prompt, apiKey: userApiKey } = await request.json();
 
     if (!prompt) {
-      return NextResponse.json({ error: "Prompt is required" }, { status: 400 });
+      return new Response("Prompt is required", { status: 400 });
     }
 
     // Use user-provided API key if available, otherwise fallback to environment variable
-    const apiKey = userApiKey || process.env.GOOGLE_AI_API_KEY;
+    const apiKey = userApiKey || process.env.OPENAI_API_KEY;
     
     if (!apiKey) {
-      return NextResponse.json({ 
-        error: "No API key provided. Please add your Google AI API key in the settings." 
-      }, { status: 401 });
+      return new Response("No API key provided", { status: 401 });
     }
 
-    const ai = new GoogleGenAI({ apiKey });
+    const openai = new OpenAI({ apiKey });
 
-    console.log("Generating images for prompt:", prompt);
+    console.log("Starting streaming image generation for prompt:", prompt);
 
-    const response = await ai.models.generateImages({
-      model: 'imagen-4.0-generate-preview-06-06',
-      prompt: prompt,
-      config: {
-        numberOfImages: 4,
+    // Create a ReadableStream for Server-Sent Events
+    const stream = new ReadableStream({
+      async start(controller) {
+        const encoder = new TextEncoder();
+        
+        // Helper function to send SSE data
+        const sendSSE = (type: string, data: any) => {
+          const sseData = `data: ${JSON.stringify({ type, data })}\n\n`;
+          controller.enqueue(encoder.encode(sseData));
+        };
+
+        try {
+          // Send initial status
+          sendSSE('status', { message: 'Starting image generation...' });
+
+          const openaiStream = await openai.images.generate({
+            prompt: prompt,
+            model: "gpt-image-1",
+            stream: true,
+            partial_images: 1,
+          });
+
+          let partialCount = 0;
+          
+          // Process the OpenAI stream
+          for await (const event of openaiStream) {
+            console.log("OpenAI event type:", event.type);
+            
+            if (event.type === "image_generation.partial_image") {
+              partialCount++;
+              console.log(`Sending partial image #${partialCount} to frontend`);
+              
+              // Send partial image to frontend immediately
+              sendSSE('partial_image', {
+                imageData: event.b64_json,
+                partialIndex: partialCount,
+                url: `data:image/png;base64,${event.b64_json}`
+              });
+              
+            } else if (event.type === "image_generation.completed") {
+              console.log("Generation completed, sending final image");
+              
+              // Check if completed event has final image
+              if (event.b64_json) {
+                sendSSE('final_image', {
+                  imageData: event.b64_json,
+                  url: `data:image/png;base64,${event.b64_json}`,
+                  id: `${Date.now()}-0`,
+                  prompt: prompt
+                });
+              } else {
+                console.log("No final image in completed event");
+                sendSSE('error', { message: 'No final image received' });
+              }
+              break;
+            }
+          }
+
+          // Send completion signal
+          sendSSE('done', { message: 'Image generation complete' });
+
+        } catch (error) {
+          console.error("Error in streaming generation:", error);
+          sendSSE('error', { message: 'Failed to generate image' });
+        } finally {
+          controller.close();
+        }
+      }
+    });
+
+    // Return streaming response with SSE headers
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST',
+        'Access-Control-Allow-Headers': 'Content-Type',
       },
     });
 
-    // Convert image bytes to base64 data URLs for frontend display
-    const images = (response.generatedImages || []).map((generatedImage, index) => {
-      const imageBytes = generatedImage.image?.imageBytes;
-      if (!imageBytes) return null;
-      const base64 = `data:image/png;base64,${imageBytes}`;
-      return {
-        id: `${Date.now()}-${index}`,
-        url: base64,
-        imageBytes: imageBytes // Keep for potential video conversion
-      };
-    }).filter(Boolean);
-
-    return NextResponse.json({ 
-      success: true, 
-      images,
-      prompt 
-    });
-
   } catch (error) {
-    console.error("Error generating images:", error);
-    return NextResponse.json(
-      { error: "Failed to generate images" }, 
-      { status: 500 }
-    );
+    console.error("Error in API route:", error);
+    return new Response("Failed to generate images", { status: 500 });
   }
 } 

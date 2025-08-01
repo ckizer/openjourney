@@ -22,7 +22,7 @@ export function SettingsDropdown() {
   useEffect(() => {
     // Function to load API key from localStorage
     const loadApiKey = () => {
-      const savedApiKey = localStorage.getItem("gemini_api_key");
+      const savedApiKey = localStorage.getItem("openai_api_key");
       setApiKey(savedApiKey || "");
     };
 
@@ -59,11 +59,11 @@ export function SettingsDropdown() {
 
   const handleApiKeyChange = (value: string) => {
     setApiKey(value);
-          localStorage.setItem("gemini_api_key", value);
+          localStorage.setItem("openai_api_key", value);
     
     // Show save confirmation
     if (value.trim()) {
-                    setSaveStatus("Google Gemini API key saved successfully!");
+                    setSaveStatus("OpenAI API key saved successfully!");
       setTimeout(() => setSaveStatus(null), 3000);
     } else {
       setSaveStatus(null);
@@ -83,8 +83,8 @@ export function SettingsDropdown() {
 
   const handleClearApiKey = () => {
     setApiKey("");
-          localStorage.removeItem("gemini_api_key");
-          setSaveStatus("Google Gemini API key cleared");
+          localStorage.removeItem("openai_api_key");
+          setSaveStatus("OpenAI API key cleared");
     setTimeout(() => setSaveStatus(null), 3000);
   };
 
@@ -100,13 +100,13 @@ export function SettingsDropdown() {
           {/* API Key Section */}
           <div className="space-y-2">
             <Label htmlFor="api-key" className="text-sm font-medium">
-                              Google Gemini API Key
+                              OpenAI API Key
             </Label>
             <div className="space-y-2">
               <Input
                 id="api-key"
                 type={showApiKey ? "text" : "password"}
-                placeholder="Enter your Google Gemini API key..."
+                placeholder="Enter your OpenAI API key..."
                 value={apiKey}
                 onChange={(e) => handleApiKeyChange(e.target.value)}
                 className="text-xs"
@@ -131,14 +131,14 @@ export function SettingsDropdown() {
               </div>
             </div>
             <p className="text-xs text-muted-foreground">
-                              Get your Google Gemini API key from{" "}
+                              Get your OpenAI API key from{" "}
               <a
-                href="https://aistudio.google.com/app/apikey"
+                href="https://platform.openai.com/api-keys"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-primary hover:underline"
               >
-                Google AI Studio
+                OpenAI Platform
               </a>
             </p>
             {saveStatus && (

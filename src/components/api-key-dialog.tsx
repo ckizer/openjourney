@@ -23,7 +23,7 @@ export function ApiKeyDialog({ open, onOpenChange, onApiKeySaved }: ApiKeyDialog
     setIsLoading(true);
     try {
       // Save to localStorage
-      localStorage.setItem('gemini_api_key', apiKey.trim());
+      localStorage.setItem('openai_api_key', apiKey.trim());
       
       // Close dialog and notify parent
       onOpenChange(false);
@@ -32,7 +32,7 @@ export function ApiKeyDialog({ open, onOpenChange, onApiKeySaved }: ApiKeyDialog
       // Reset form
       setApiKey('');
     } catch (error) {
-              console.error('Error saving Google Gemini API key:', error);
+              console.error('Error saving OpenAI API key:', error);
     } finally {
       setIsLoading(false);
     }
@@ -50,12 +50,12 @@ export function ApiKeyDialog({ open, onOpenChange, onApiKeySaved }: ApiKeyDialog
         <DialogHeader className="text-center">
           <DialogTitle className="flex items-center justify-center gap-2 text-xl">
             <KeyIcon className="w-5 h-5" />
-            Gemini API Key Required
+            OpenAI API Key Required
           </DialogTitle>
           <DialogDescription className="text-center space-y-3">
-            <p>You need a Google Gemini API key to generate images and videos.</p>
+            <p>You need an OpenAI API key to generate images.</p>
             <p className="text-sm text-muted-foreground">
-              Get your free Google Gemini API key from Google AI Studio
+              Get your OpenAI API key from the OpenAI Platform
             </p>
           </DialogDescription>
         </DialogHeader>
@@ -65,19 +65,19 @@ export function ApiKeyDialog({ open, onOpenChange, onApiKeySaved }: ApiKeyDialog
           <Button
             variant="outline"
             className="w-full"
-            onClick={() => window.open('https://aistudio.google.com/app/apikey', '_blank')}
+            onClick={() => window.open('https://platform.openai.com/api-keys', '_blank')}
           >
             <ExternalLinkIcon className="w-4 h-4 mr-2" />
-            Get Google Gemini API Key from AI Studio
+            Get OpenAI API Key from Platform
           </Button>
 
           {/* API Key Input */}
           <div className="space-y-2">
-            <Label htmlFor="api-key">Enter your Google Gemini API key:</Label>
+            <Label htmlFor="api-key">Enter your OpenAI API key:</Label>
             <Input
               id="api-key"
               type="password"
-              placeholder="AIza..."
+              placeholder="sk-..."
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -91,12 +91,12 @@ export function ApiKeyDialog({ open, onOpenChange, onApiKeySaved }: ApiKeyDialog
             disabled={!apiKey.trim() || isLoading}
             className="w-full"
           >
-            {isLoading ? 'Saving...' : 'Save Google Gemini API Key'}
+            {isLoading ? 'Saving...' : 'Save OpenAI API Key'}
           </Button>
 
           {/* Help Text */}
           <p className="text-xs text-muted-foreground text-center">
-            Your Google Gemini API key is stored locally in your browser and never sent anywhere.
+            Your OpenAI API key is stored locally in your browser and never sent anywhere.
           </p>
         </div>
       </DialogContent>

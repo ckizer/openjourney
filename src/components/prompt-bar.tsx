@@ -3,26 +3,26 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ImageIcon, VideoIcon } from "lucide-react";
+import { ImageIcon } from "lucide-react";
 import Image from "next/image";
 import { SettingsDropdown } from "@/components/settings-dropdown";
 
 interface PromptBarProps {
-  onGenerate?: (type: "image" | "video", prompt: string) => void;
+  onGenerate?: (prompt: string) => void;
 }
 
 export function PromptBar({ onGenerate }: PromptBarProps) {
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const handleGenerate = (type: "image" | "video") => {
+  const handleGenerate = () => {
     if (!prompt.trim()) return;
     
     setIsGenerating(true);
     
     // Call the parent handler to add new generation
     if (onGenerate) {
-      onGenerate(type, prompt.trim());
+      onGenerate(prompt.trim());
     }
     
     // Clear the prompt
@@ -37,7 +37,7 @@ export function PromptBar({ onGenerate }: PromptBarProps) {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      handleGenerate("image"); // Default to image on Enter
+      handleGenerate();
     }
   };
 
@@ -64,28 +64,18 @@ export function PromptBar({ onGenerate }: PromptBarProps) {
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 onKeyDown={handleKeyDown}
-                className="pr-2 sm:pr-44 h-12 text-base bg-card border-input"
+                className="pr-2 sm:pr-28 h-12 text-base bg-card border-input"
                 disabled={isGenerating}
               />
               <div className="absolute right-2 top-1/2 -translate-y-1/2 hidden sm:flex gap-2">
                 <Button
                   size="sm"
-                  variant="outline"
-                  onClick={() => handleGenerate("image")}
+                  onClick={() => handleGenerate()}
                   disabled={!prompt.trim() || isGenerating}
                   className="h-8"
                 >
                   <ImageIcon className="w-4 h-4 mr-1" />
-                  Image
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={() => handleGenerate("video")}
-                  disabled={!prompt.trim() || isGenerating}
-                  className="h-8"
-                >
-                  <VideoIcon className="w-4 h-4 mr-1" />
-                  Video
+                  Generate
                 </Button>
                 <SettingsDropdown />
               </div>
@@ -95,21 +85,12 @@ export function PromptBar({ onGenerate }: PromptBarProps) {
           {/* Mobile buttons row */}
           <div className="flex sm:hidden gap-3 justify-center">
             <Button
-              variant="outline"
-              onClick={() => handleGenerate("image")}
+              onClick={() => handleGenerate()}
               disabled={!prompt.trim() || isGenerating}
               className="flex-1 h-10"
             >
               <ImageIcon className="w-4 h-4 mr-2" />
-              Image
-            </Button>
-            <Button
-              onClick={() => handleGenerate("video")}
-              disabled={!prompt.trim() || isGenerating}
-              className="flex-1 h-10"
-            >
-              <VideoIcon className="w-4 h-4 mr-2" />
-              Video
+              Generate Images
             </Button>
             <SettingsDropdown />
           </div>
