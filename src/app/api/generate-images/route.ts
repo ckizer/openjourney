@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
         const encoder = new TextEncoder();
         
         // Helper function to send SSE data
-        const sendSSE = (type: string, data: any) => {
+        const sendSSE = (type: string, data: Record<string, unknown>) => {
           const sseData = `data: ${JSON.stringify({ type, data })}\n\n`;
           controller.enqueue(encoder.encode(sseData));
         };
