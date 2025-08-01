@@ -155,6 +155,7 @@ export function ContentGrid({
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let partialImageGeneration: ImageGeneration | null = null;
+      let buffer = ''; // Buffer for incomplete SSE messages
 
       // Read the streaming response
       while (true) {
@@ -165,61 +166,71 @@ export function ContentGrid({
           break;
         }
 
-        // Decode the chunk and process SSE data
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n');
+        // Decode the chunk and add to buffer
+        buffer += decoder.decode(value, { stream: true });
+        console.log('Buffer chunk:', buffer.slice(0, 100) + '...');
         
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const eventData = JSON.parse(line.slice(6));
-              console.log('SSE Event:', eventData.type, eventData.data);
-              
-              if (eventData.type === 'partial_image') {
-                // Show partial image immediately
-                console.log('Displaying partial image in frontend');
-                
-                partialImageGeneration = {
-                  id: loadingGeneration.id,
-                  prompt: loadingGeneration.prompt,
-                  images: [{
-                    url: eventData.data.url,
-                    imageBytes: eventData.data.imageData
-                  }],
-                  timestamp: loadingGeneration.timestamp,
-                  isLoading: true // Still loading, partial image
-                };
+        // Process complete SSE messages
+        const messages = buffer.split('\n\n');
+        buffer = messages.pop() || ''; // Keep incomplete message in buffer
+        
+        for (const message of messages) {
+          const lines = message.split('\n');
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const jsonData = line.slice(6).trim();
+                if (jsonData) {
+                  const eventData = JSON.parse(jsonData);
+                  console.log('SSE Event:', eventData.type);
+                  
+                  if (eventData.type === 'partial_image') {
+                    // Show partial image immediately
+                    console.log('Displaying partial image in frontend');
+                    
+                    partialImageGeneration = {
+                      id: loadingGeneration.id,
+                      prompt: loadingGeneration.prompt,
+                      images: [{
+                        url: eventData.data.url,
+                        imageBytes: eventData.data.imageData
+                      }],
+                      timestamp: loadingGeneration.timestamp,
+                      isLoading: true // Still loading, partial image
+                    };
 
-                // Update UI with partial image
-                setGenerations(prev => prev.map(gen => 
-                  gen.id === loadingGeneration.id ? partialImageGeneration! : gen
-                ));
-                
-              } else if (eventData.type === 'final_image') {
-                // Replace with final crisp image
-                console.log('Replacing with final image in frontend');
-                
-                const completedGeneration: ImageGeneration = {
-                  id: loadingGeneration.id,
-                  prompt: loadingGeneration.prompt,
-                  images: [{
-                    url: eventData.data.url,
-                    imageBytes: eventData.data.imageData
-                  }],
-                  timestamp: loadingGeneration.timestamp,
-                  isLoading: false // Generation complete
-                };
+                    // Update UI with partial image
+                    setGenerations(prev => prev.map(gen => 
+                      gen.id === loadingGeneration.id ? partialImageGeneration! : gen
+                    ));
+                    
+                  } else if (eventData.type === 'final_image') {
+                    // Replace with final crisp image
+                    console.log('Replacing with final image in frontend');
+                    
+                    const completedGeneration: ImageGeneration = {
+                      id: loadingGeneration.id,
+                      prompt: loadingGeneration.prompt,
+                      images: [{
+                        url: eventData.data.url,
+                        imageBytes: eventData.data.imageData
+                      }],
+                      timestamp: loadingGeneration.timestamp,
+                      isLoading: false // Generation complete
+                    };
 
-                // Replace partial with final image
-                setGenerations(prev => prev.map(gen => 
-                  gen.id === loadingGeneration.id ? completedGeneration : gen
-                ));
-                
-              } else if (eventData.type === 'error') {
-                throw new Error(eventData.data.message);
+                    // Replace partial with final image
+                    setGenerations(prev => prev.map(gen => 
+                      gen.id === loadingGeneration.id ? completedGeneration : gen
+                    ));
+                    
+                  } else if (eventData.type === 'error') {
+                    throw new Error(eventData.data.message);
+                  }
+                }
+              } catch (parseError) {
+                console.error('Error parsing SSE data:', parseError, 'Raw line:', line);
               }
-            } catch (parseError) {
-              console.error('Error parsing SSE data:', parseError);
             }
           }
         }
@@ -256,16 +267,16 @@ export function ContentGrid({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          {generation.isLoading ? (
+          {generation.isLoading && !('images' in generation && generation.images.length > 0) ? (
             <LoadingGrid 
               prompt={generation.prompt}
             />
-          ) : (
+          ) : 'images' in generation ? (
             <ImageGrid 
               generation={generation}
               onViewFullscreen={openFocusedView}
             />
-          )}
+          ) : null}
         </motion.div>
       ))}
       
