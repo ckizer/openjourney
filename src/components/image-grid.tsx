@@ -156,6 +156,11 @@ export function ImageGrid({ generation, onViewFullscreen }: ImageGridProps) {
             <Badge variant="outline" className="text-xs">
               {generation.images.length} image{generation.images.length !== 1 ? 's' : ''}
             </Badge>
+            {generation.isLoading && (
+              <Badge variant="default" className="text-xs bg-blue-500 animate-pulse">
+                🎬 Generating...
+              </Badge>
+            )}
           </div>
           
           <div className="space-y-2">

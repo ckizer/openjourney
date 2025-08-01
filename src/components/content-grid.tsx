@@ -186,7 +186,7 @@ export function ContentGrid({
                   
                   if (eventData.type === 'partial_image') {
                     // Show partial image immediately
-                    console.log('Displaying partial image in frontend');
+                    console.log('Frontend: Received partial image, updating UI');
                     
                     partialImageGeneration = {
                       id: loadingGeneration.id,
@@ -200,9 +200,13 @@ export function ContentGrid({
                     };
 
                     // Update UI with partial image
-                    setGenerations(prev => prev.map(gen => 
-                      gen.id === loadingGeneration.id ? partialImageGeneration! : gen
-                    ));
+                    setGenerations(prev => {
+                      const updated = prev.map(gen => 
+                        gen.id === loadingGeneration.id ? partialImageGeneration! : gen
+                      );
+                      console.log('Frontend: Updated generations with partial image');
+                      return updated;
+                    });
                     
                   } else if (eventData.type === 'final_image') {
                     // Replace with final crisp image
