@@ -2,10 +2,15 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { ImageIcon } from "lucide-react";
 import Image from "next/image";
 import { SettingsDropdown } from "@/components/settings-dropdown";
+import {
+  PromptInput,
+  PromptInputTextarea,
+  PromptInputActions,
+  PromptInputAction,
+} from "@/components/ui/prompt-input";
 
 interface PromptBarProps {
   onGenerate?: (prompt: string) => void;
@@ -34,11 +39,8 @@ export function PromptBar({ onGenerate }: PromptBarProps) {
     }, 500);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleGenerate();
-    }
+  const handleSubmit = () => {
+    handleGenerate();
   };
 
   return (
@@ -58,27 +60,35 @@ export function PromptBar({ onGenerate }: PromptBarProps) {
               />
             </div>
             
-            <div className="relative flex-1 w-full">
-              <Input
-                placeholder="Describe what you want to create..."
+            <div className="flex-1 w-full">
+              <PromptInput
                 value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                onKeyDown={handleKeyDown}
-                className="pr-2 sm:pr-28 h-12 text-base bg-card border-input"
-                disabled={isGenerating}
-              />
-              <div className="absolute right-2 top-1/2 -translate-y-1/2 hidden sm:flex gap-2">
-                <Button
-                  size="sm"
-                  onClick={() => handleGenerate()}
-                  disabled={!prompt.trim() || isGenerating}
-                  className="h-8"
-                >
-                  <ImageIcon className="w-4 h-4 mr-1" />
-                  Generate
-                </Button>
-                <SettingsDropdown />
-              </div>
+                onValueChange={setPrompt}
+                onSubmit={handleSubmit}
+                isLoading={isGenerating}
+                className="min-h-[48px]"
+              >
+                <PromptInputTextarea
+                  placeholder="Describe what you want to create..."
+                  className="text-base"
+                />
+                <PromptInputActions className="hidden sm:flex">
+                  <PromptInputAction tooltip="Generate images">
+                    <Button
+                      size="sm"
+                      onClick={handleGenerate}
+                      disabled={!prompt.trim() || isGenerating}
+                      className="h-8"
+                    >
+                      <ImageIcon className="w-4 h-4 mr-1" />
+                      Generate
+                    </Button>
+                  </PromptInputAction>
+                  <PromptInputAction tooltip="Settings">
+                    <SettingsDropdown />
+                  </PromptInputAction>
+                </PromptInputActions>
+              </PromptInput>
             </div>
           </div>
 
