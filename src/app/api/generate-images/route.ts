@@ -84,7 +84,44 @@ export async function POST(request: NextRequest) {
 
         } catch (error) {
           console.error("Error in streaming generation:", error);
-          sendSSE('error', { message: 'Failed to generate image' });
+          
+          // Handle specific OpenAI error types
+          if (error && typeof error === 'object' && 'code' in error) {
+            const openaiError = error as any;
+            
+            if (openaiError.code === 'moderation_blocked') {
+              sendSSE('error', { 
+                type: 'moderation_blocked',
+                message: 'Content policy violation: Your prompt contains content that violates OpenAI\'s usage policies. Please try a different prompt.',
+                code: 'moderation_blocked'
+              });
+            } else if (openaiError.code === 'rate_limit_exceeded') {
+              sendSSE('error', { 
+                type: 'rate_limit',
+                message: 'Rate limit exceeded. Please wait a moment before trying again.',
+                code: 'rate_limit_exceeded'
+              });
+            } else if (openaiError.code === 'insufficient_quota') {
+              sendSSE('error', { 
+                type: 'quota_exceeded',
+                message: 'API quota exceeded. Please check your OpenAI account billing.',
+                code: 'insufficient_quota'
+              });
+            } else {
+              sendSSE('error', { 
+                type: 'api_error',
+                message: `API Error: ${openaiError.message || 'Unknown error occurred'}`,
+                code: openaiError.code || 'unknown'
+              });
+            }
+          } else {
+            // Generic error fallback
+            sendSSE('error', { 
+              type: 'unknown',
+              message: 'Failed to generate image. Please try again.',
+              code: 'unknown'
+            });
+          }
         } finally {
           controller.close();
         }

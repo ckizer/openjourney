@@ -140,6 +140,8 @@ export function ContentGrid({
     // Add new loading generation at the top
     setGenerations(prev => [loadingGeneration, ...prev]);
 
+    let hasError = false; // Flag to track if we've handled an error gracefully
+
     try {
       // Create streaming request for real-time image updates
       const response = await fetch('/api/generate-images', {
@@ -165,6 +167,11 @@ export function ContentGrid({
         
         if (done) {
           console.log('Stream completed');
+          break;
+        }
+
+        // Exit early if we've handled an error gracefully
+        if (hasError) {
           break;
         }
 
@@ -231,7 +238,31 @@ export function ContentGrid({
                     ));
                     
                   } else if (eventData.type === 'error') {
-                    throw new Error(eventData.data.message);
+                    // Handle error gracefully without console logging
+                    
+                    // Handle different error types gracefully
+                    const errorData = eventData.data;
+                    
+                    if (errorData.type === 'moderation_blocked') {
+                      // Show moderation error without throwing
+                      setGenerations(prev => prev.filter(gen => gen.id !== loadingGeneration.id));
+                      alert('❌ Content Policy Violation\n\n' + errorData.message);
+                      hasError = true;
+                      break; // Exit the stream processing loop
+                    } else if (errorData.type === 'rate_limit') {
+                      setGenerations(prev => prev.filter(gen => gen.id !== loadingGeneration.id));
+                      alert('⏱️ Rate Limit Exceeded\n\n' + errorData.message);
+                      hasError = true;
+                      break;
+                    } else if (errorData.type === 'quota_exceeded') {
+                      setGenerations(prev => prev.filter(gen => gen.id !== loadingGeneration.id));
+                      alert('💳 Quota Exceeded\n\n' + errorData.message);
+                      hasError = true;
+                      break;
+                    } else {
+                      // For other errors, still throw to maintain existing error handling
+                      throw new Error(errorData.message || 'Unknown error occurred');
+                    }
                   }
                 }
               } catch (parseError) {
@@ -242,16 +273,19 @@ export function ContentGrid({
         }
       }
     } catch (error) {
-      console.error('Generation failed:', error);
-      // Remove the loading generation on error
-      setGenerations(prev => prev.filter(gen => gen.id !== loadingGeneration.id));
-      
-      // Show user-friendly error message
-      const errorMessage = error instanceof Error ? error.message : 'Generation failed';
-      if (errorMessage.includes('API key')) {
-        setShowApiKeyDialog(true);
-      } else {
-        alert(`Generation failed: ${errorMessage}`);
+      // Only handle errors if we haven't already gracefully handled one
+      if (!hasError) {
+        console.error('Generation failed:', error);
+        // Remove the loading generation on error
+        setGenerations(prev => prev.filter(gen => gen.id !== loadingGeneration.id));
+        
+        // Show user-friendly error message
+        const errorMessage = error instanceof Error ? error.message : 'Generation failed';
+        if (errorMessage.includes('API key')) {
+          setShowApiKeyDialog(true);
+        } else {
+          alert(`Generation failed: ${errorMessage}`);
+        }
       }
     }
   };
