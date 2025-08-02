@@ -7,7 +7,7 @@ import { Message, MessageContent } from '@/components/ui/message';
 import { PromptInput, PromptInputTextarea, PromptInputActions, PromptInputAction } from '@/components/ui/prompt-input';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ArrowLeft, Send } from 'lucide-react';
+import { ArrowLeft, ArrowUp, Square } from 'lucide-react';
 
 type ChatMessage = {
   id: string;
@@ -94,8 +94,7 @@ export default function ChatPage() {
             <span className="text-sm font-medium">Back to Gallery</span>
           </Link>
           <div>
-            <h1 className="text-2xl font-bold">OpenAI Chat</h1>
-            <p className="text-muted-foreground">Chat with GPT-4</p>
+            <h1 className="text-1xl font-bold">AI Chat</h1>
           </div>
         </div>
       </header>
@@ -112,17 +111,20 @@ export default function ChatPage() {
               )}
               {messages.map((message) => (
                 <Message key={message.id} className="max-w-3xl">
-                  <MessageContent 
-                    markdown={message.role === 'assistant'}
-                    className={message.role === 'user' ? 'bg-primary text-primary-foreground ml-auto' : ''}
-                  >
-                    {message.content}
-                  </MessageContent>
+                  {message.role === 'assistant' ? (
+                    <MessageContent markdown className="">
+                      {message.content}
+                    </MessageContent>
+                  ) : (
+                    <MessageContent className="bg-primary text-primary-foreground ml-auto">
+                      {message.content}
+                    </MessageContent>
+                  )}
                 </Message>
               ))}
               {isLoading && (
                 <Message className="max-w-3xl">
-                  <MessageContent>
+                  <MessageContent markdown={false}>
                     <div className="flex items-center space-x-2">
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
                       <span>Thinking...</span>
@@ -146,21 +148,28 @@ export default function ChatPage() {
             onValueChange={setInputValue}
             onSubmit={handleSubmit}
             isLoading={isLoading}
+            className="w-full"
           >
             <PromptInputTextarea 
-              placeholder="Type your message here..." 
+              placeholder="Ask me anything..." 
               disabled={isLoading}
             />
-            <PromptInputActions>
-              <PromptInputAction tooltip="Send message">
-                <Button 
-                  size="sm" 
-                  variant="ghost"
+            <PromptInputActions className="flex items-center justify-end gap-2 pt-2">
+              <PromptInputAction
+                tooltip={isLoading ? "Stop generation" : "Send message"}
+              >
+                <Button
+                  variant="default"
+                  size="icon"
+                  className="h-8 w-8 rounded-full"
                   onClick={handleSubmit}
-                  disabled={isLoading || !inputValue.trim()}
-                  className="h-8 w-8 p-0"
+                  disabled={!inputValue.trim() && !isLoading}
                 >
-                  <Send className="h-4 w-4" />
+                  {isLoading ? (
+                    <Square className="size-5 fill-current" />
+                  ) : (
+                    <ArrowUp className="size-5" />
+                  )}
                 </Button>
               </PromptInputAction>
             </PromptInputActions>
