@@ -169,7 +169,7 @@ export default function ChatPage() {
       </header>
 
       {/* Chat area */}
-      <div ref={chatContainerRef} className="relative flex-1 overflow-y-auto">
+      <div ref={chatContainerRef} className="relative flex-1 min-h-0">
         <ChatContainerRoot className="h-full">
           <ChatContainerContent className="space-y-0 px-5 py-12">
             {messages.map((message, index) => {
