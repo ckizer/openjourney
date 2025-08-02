@@ -24,12 +24,14 @@ interface ImageGeneration {
 interface ImageGridProps {
   generation: ImageGeneration;
   onViewFullscreen?: (generationId: string, imageIndex: number) => void;
+  onUsePrompt?: (prompt: string) => void;
 }
 
-export function ImageGrid({ generation, onViewFullscreen }: ImageGridProps) {
+export function ImageGrid({ generation, onViewFullscreen, onUsePrompt }: ImageGridProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [isPromptHovered, setIsPromptHovered] = useState(false);
 
   const formatTimeAgo = (date: Date) => {
     const now = new Date();
@@ -67,6 +69,12 @@ export function ImageGrid({ generation, onViewFullscreen }: ImageGridProps) {
     } else {
       setLightboxIndex(index);
       setLightboxOpen(true);
+    }
+  };
+
+  const handleUsePrompt = () => {
+    if (onUsePrompt) {
+      onUsePrompt(generation.prompt);
     }
   };
 
@@ -163,7 +171,35 @@ export function ImageGrid({ generation, onViewFullscreen }: ImageGridProps) {
           
           <div className="space-y-2">
             <h3 className="text-sm font-medium text-muted-foreground">Prompt</h3>
-            <p className="text-sm leading-relaxed">{generation.prompt}</p>
+            <div 
+              className={`relative group cursor-pointer rounded-lg p-3 transition-all duration-200 border ${
+                isPromptHovered 
+                  ? 'bg-muted/80 border-border' 
+                  : 'bg-transparent border-transparent hover:bg-muted/40'
+              }`}
+              onMouseEnter={() => setIsPromptHovered(true)}
+              onMouseLeave={() => setIsPromptHovered(false)}
+              onClick={handleUsePrompt}
+            >
+              <p className="text-sm leading-relaxed pr-20">{generation.prompt}</p>
+              
+              {/* Use prompt button - appears on hover */}
+              <div className={`absolute right-2 top-1/2 -translate-y-1/2 transition-all duration-200 ${
+                isPromptHovered ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-2'
+              }`}>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 px-2 text-xs font-medium bg-background/80 hover:bg-background border border-border/50 shadow-sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleUsePrompt();
+                  }}
+                >
+                  + use prompt
+                </Button>
+              </div>
+            </div>
           </div>
         </Card>
       </div>

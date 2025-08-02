@@ -14,11 +14,17 @@ import {
 
 interface PromptBarProps {
   onGenerate?: (prompt: string) => void;
+  value?: string;
+  onValueChange?: (value: string) => void;
 }
 
-export function PromptBar({ onGenerate }: PromptBarProps) {
-  const [prompt, setPrompt] = useState("");
+export function PromptBar({ onGenerate, value, onValueChange }: PromptBarProps) {
+  const [internalPrompt, setInternalPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+
+  // Use controlled value if provided, otherwise use internal state
+  const prompt = value ?? internalPrompt;
+  const setPrompt = onValueChange ?? setInternalPrompt;
 
   const handleGenerate = () => {
     if (!prompt.trim()) return;

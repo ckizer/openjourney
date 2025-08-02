@@ -6,10 +6,14 @@ import { useState, useCallback } from "react";
 
 export default function Home() {
   const [generateHandler, setGenerateHandler] = useState<((prompt: string) => void) | null>(null);
-
+  const [promptValue, setPromptValue] = useState("");
 
   const handleSetGenerator = useCallback((handler: (prompt: string) => void) => {
     setGenerateHandler(() => handler);
+  }, []);
+
+  const handleUsePrompt = useCallback((prompt: string) => {
+    setPromptValue(prompt);
   }, []);
 
 
@@ -17,13 +21,18 @@ export default function Home() {
     <div className="min-h-screen bg-background">
       {/* Fixed prompt bar at top */}
       <div className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <PromptBar onGenerate={generateHandler || undefined} />
+        <PromptBar 
+          onGenerate={generateHandler || undefined}
+          value={promptValue}
+          onValueChange={setPromptValue}
+        />
       </div>
       
       {/* Main content area */}
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <ContentGrid 
           onNewGeneration={handleSetGenerator}
+          onUsePrompt={handleUsePrompt}
         />
       </main>
     </div>

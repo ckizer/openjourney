@@ -46,9 +46,11 @@ const createSampleGenerations = (): Generation[] => [
 ];
 
 export function ContentGrid({ 
-  onNewGeneration
+  onNewGeneration,
+  onUsePrompt
 }: { 
   onNewGeneration?: (handler: (prompt: string) => void) => void;
+  onUsePrompt?: (prompt: string) => void;
 }) {
   const [generations, setGenerations] = useState<Generation[]>([]);
   const [showApiKeyDialog, setShowApiKeyDialog] = useState(false);
@@ -279,6 +281,7 @@ export function ContentGrid({
             <ImageGrid 
               generation={generation}
               onViewFullscreen={openFocusedView}
+              onUsePrompt={onUsePrompt}
             />
           ) : null}
         </motion.div>
