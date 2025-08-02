@@ -87,72 +87,71 @@ export function ImageGrid({ generation, onViewFullscreen, onUsePrompt }: ImageGr
 
   return (
     <div className="flex flex-col lg:flex-row gap-6">
-      {/* Images grid - left side */}
+      {/* Single large image - left side */}
       <div className="flex-1">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-          {generation.images.map((imageData, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3, delay: index * 0.1 }}
+        {generation.images.map((imageData, index) => (
+          <motion.div
+            key={index}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.3 }}
+            className="w-full max-w-2xl mx-auto"
+          >
+            <Card 
+              className="relative group cursor-pointer bg-muted/50 border-border/50 hover:shadow-lg transition-all duration-300 overflow-hidden aspect-square p-0"
+              onMouseEnter={() => setHoveredIndex(index)}
+              onMouseLeave={() => setHoveredIndex(null)}
+              onClick={() => handleViewFullscreen(index)}
             >
-              <Card 
-                className="relative group cursor-pointer bg-muted/50 border-border/50 hover:shadow-lg transition-all duration-300 overflow-hidden aspect-square p-0"
-                onMouseEnter={() => setHoveredIndex(index)}
-                onMouseLeave={() => setHoveredIndex(null)}
-                onClick={() => handleViewFullscreen(index)}
-              >
-                <Image
-                  src={imageData.url}
-                  alt={`Generated image ${index + 1}`}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                />
+              <Image
+                src={imageData.url}
+                alt={`Generated image ${index + 1}`}
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, (max-width: 1024px) 60vw, 50vw"
+              />
+                
+                {/* Hover overlay */}
+                <div className={`absolute inset-0 bg-black/50 backdrop-blur-[1px] transition-opacity duration-300 ${
+                  hoveredIndex === index ? 'opacity-100' : 'opacity-0'
+                } flex flex-col justify-end p-4 gap-3`}>
                   
-                  {/* Hover overlay */}
-                  <div className={`absolute inset-0 bg-black/50 backdrop-blur-[1px] transition-opacity duration-300 ${
-                    hoveredIndex === index ? 'opacity-100' : 'opacity-0'
-                  } flex flex-col justify-end p-3 gap-2`}>
+                  {/* Action buttons */}
+                  <div className="flex gap-3 justify-center">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDownload(imageData.url, index);
+                      }}
+                      className="h-8 px-4 text-sm font-medium bg-white/90 hover:bg-white text-black"
+                    >
+                      <DownloadIcon className="w-4 h-4 mr-2" />
+                      Download
+                    </Button>
                     
-                    {/* Action buttons */}
-                    <div className="flex gap-2 justify-center">
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDownload(imageData.url, index);
-                        }}
-                        className="h-6 sm:h-7 px-2 sm:px-3 text-xs font-medium bg-white/90 hover:bg-white text-black"
-                      >
-                        <DownloadIcon className="w-3 h-3 mr-1" />
-                        Download
-                      </Button>
-                      
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleViewFullscreen(index);
-                        }}
-                        className="h-6 sm:h-7 px-2 sm:px-3 text-xs font-medium bg-white/90 hover:bg-white text-black"
-                      >
-                        <ExpandIcon className="w-3 h-3 mr-1" />
-                        Expand
-                      </Button>
-                    </div>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleViewFullscreen(index);
+                      }}
+                      className="h-8 px-4 text-sm font-medium bg-white/90 hover:bg-white text-black"
+                    >
+                      <ExpandIcon className="w-4 h-4 mr-2" />
+                      Expand
+                    </Button>
                   </div>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
+                </div>
+            </Card>
+          </motion.div>
+        ))}
       </div>
       
       {/* Prompt and metadata - right side */}
-      <div className="lg:w-80 flex flex-col gap-4">
+      <div className="lg:w-96 flex flex-col gap-4">
         <Card className="p-4 bg-muted/30 border-border/50">
           <div className="flex items-center gap-2 mb-3">
             <Badge variant="secondary" className="text-xs">

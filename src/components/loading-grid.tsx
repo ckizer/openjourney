@@ -15,30 +15,26 @@ export function LoadingGrid({ prompt }: LoadingGridProps) {
 
   return (
     <div className="flex flex-col lg:flex-row gap-6">
-      {/* Loading grid - left side */}
+      {/* Single large loading skeleton - left side */}
       <div className="flex-1">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-          {Array.from({ length: 4 }).map((_, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3, delay: index * 0.1 }}
-            >
-              <Card className="overflow-hidden aspect-square border-border/50 relative">
-                <div className="absolute inset-0">
-                  <Skeleton className="w-full h-full">
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-shimmer" />
-                  </Skeleton>
-                </div>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3 }}
+          className="w-full max-w-2xl mx-auto"
+        >
+          <Card className="overflow-hidden aspect-square border-border/50 relative">
+            <div className="absolute inset-0">
+              <Skeleton className="w-full h-full">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-shimmer" />
+              </Skeleton>
+            </div>
+          </Card>
+        </motion.div>
       </div>
 
       {/* Prompt information - right side */}
-      <div className="w-full lg:w-80 flex-shrink-0">
+      <div className="w-full lg:w-96 flex-shrink-0">
         <div className="lg:sticky lg:top-24">
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
