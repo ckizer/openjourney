@@ -5,9 +5,10 @@ import { ChatContainerRoot, ChatContainerContent, ChatContainerScrollAnchor } fr
 import { ScrollButton } from '@/components/ui/scroll-button';
 import { Message, MessageContent } from '@/components/ui/message';
 import { PromptInput, PromptInputTextarea, PromptInputActions, PromptInputAction } from '@/components/ui/prompt-input';
+import { FileUpload, FileUploadContent, FileUploadTrigger } from '@/components/ui/file-upload';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ArrowLeft, ArrowUp, Square } from 'lucide-react';
+import { ArrowLeft, ArrowUp, Square, Paperclip, X } from 'lucide-react';
 
 type ChatMessage = {
   id: string;
@@ -19,8 +20,8 @@ type ChatMessage = {
 export default function ChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-
   const [inputValue, setInputValue] = useState('');
+  const [files, setFiles] = useState<File[]>([]);
 
   const sendMessage = useCallback(async (content: string) => {
     if (!content.trim()) return;
@@ -78,9 +79,20 @@ export default function ChatPage() {
     }
   }, [messages]);
 
+  const handleFilesAdded = useCallback((newFiles: File[]) => {
+    setFiles((prev) => [...prev, ...newFiles]);
+  }, []);
+
+  const removeFile = useCallback((index: number) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
   const handleSubmit = useCallback(() => {
-    sendMessage(inputValue);
-  }, [inputValue, sendMessage]);
+    if (inputValue.trim() || files.length > 0) {
+      sendMessage(inputValue);
+      setFiles([]); // Clear files after sending
+    }
+  }, [inputValue, files, sendMessage]);
 
   return (
     <div className="flex flex-col h-screen bg-background">
@@ -124,12 +136,12 @@ export default function ChatPage() {
               ))}
               {isLoading && (
                 <Message className="max-w-3xl">
-                  <MessageContent markdown={false}>
+                  <div className="rounded-lg p-2 text-foreground bg-secondary prose break-words whitespace-normal">
                     <div className="flex items-center space-x-2">
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
                       <span>Thinking...</span>
                     </div>
-                  </MessageContent>
+                  </div>
                 </Message>
               )}
               <ChatContainerScrollAnchor />
@@ -143,37 +155,104 @@ export default function ChatPage() {
 
       <div className="border-t p-4">
         <div className="max-w-4xl mx-auto">
-          <PromptInput
-            value={inputValue}
-            onValueChange={setInputValue}
-            onSubmit={handleSubmit}
-            isLoading={isLoading}
-            className="w-full"
+          <FileUpload
+            onFilesAdded={handleFilesAdded}
+            accept=".jpg,.jpeg,.png,.pdf,.docx,.txt,.md"
           >
-            <PromptInputTextarea 
-              placeholder="Ask me anything..." 
-              disabled={isLoading}
-            />
-            <PromptInputActions className="flex items-center justify-end gap-2 pt-2">
-              <PromptInputAction
-                tooltip={isLoading ? "Stop generation" : "Send message"}
-              >
-                <Button
-                  variant="default"
-                  size="icon"
-                  className="h-8 w-8 rounded-full"
-                  onClick={handleSubmit}
-                  disabled={!inputValue.trim() && !isLoading}
+            <PromptInput
+              value={inputValue}
+              onValueChange={setInputValue}
+              onSubmit={handleSubmit}
+              isLoading={isLoading}
+              className="w-full"
+            >
+              {files.length > 0 && (
+                <div className="grid grid-cols-2 gap-2 pb-2">
+                  {files.map((file, index) => (
+                    <div
+                      key={index}
+                      className="bg-secondary flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm"
+                      onClick={e => e.stopPropagation()}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Paperclip className="size-4" />
+                        <span className="max-w-[120px] truncate text-sm">
+                          {file.name}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => removeFile(index)}
+                        className="hover:bg-secondary/50 rounded-full p-1"
+                      >
+                        <X className="size-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <PromptInputTextarea 
+                placeholder="Type a message or drop files..." 
+                disabled={isLoading}
+              />
+
+              <PromptInputActions className="flex items-center justify-between gap-2 pt-2">
+                <PromptInputAction tooltip="Attach files">
+                  <FileUploadTrigger asChild>
+                    <div className="hover:bg-secondary-foreground/10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-2xl">
+                      <Paperclip className="text-primary size-5" />
+                    </div>
+                  </FileUploadTrigger>
+                </PromptInputAction>
+
+                <PromptInputAction
+                  tooltip={isLoading ? "Stop generation" : "Send message"}
                 >
-                  {isLoading ? (
-                    <Square className="size-5 fill-current" />
-                  ) : (
-                    <ArrowUp className="size-5" />
-                  )}
-                </Button>
-              </PromptInputAction>
-            </PromptInputActions>
-          </PromptInput>
+                  <Button
+                    variant="default"
+                    size="icon"
+                    className="h-8 w-8 rounded-full"
+                    onClick={handleSubmit}
+                    disabled={(!inputValue.trim() && files.length === 0) && !isLoading}
+                  >
+                    {isLoading ? (
+                      <Square className="size-5 fill-current" />
+                    ) : (
+                      <ArrowUp className="size-5" />
+                    )}
+                  </Button>
+                </PromptInputAction>
+              </PromptInputActions>
+            </PromptInput>
+
+            <FileUploadContent>
+              <div className="flex min-h-[200px] w-full items-center justify-center backdrop-blur-sm">
+                <div className="bg-background/90 m-4 w-full max-w-md rounded-lg border p-8 shadow-lg">
+                  <div className="mb-4 flex justify-center">
+                    <svg
+                      className="text-muted size-8"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"
+                      />
+                    </svg>
+                  </div>
+                  <h3 className="mb-2 text-center text-base font-medium">
+                    Drop files to upload
+                  </h3>
+                  <p className="text-muted-foreground text-center text-sm">
+                    Release to add files to your message
+                  </p>
+                </div>
+              </div>
+            </FileUploadContent>
+          </FileUpload>
         </div>
       </div>
     </div>
