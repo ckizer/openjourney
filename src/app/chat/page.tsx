@@ -1,184 +1,302 @@
-'use client';
+'use client'
 
-import { useState, useCallback } from 'react';
-import { ChatContainerRoot, ChatContainerContent, ChatContainerScrollAnchor } from '@/components/ui/chat-container';
-import { ScrollButton } from '@/components/ui/scroll-button';
-import { Message, MessageContent } from '@/components/ui/message';
-import { PromptInput, PromptInputTextarea, PromptInputActions, PromptInputAction } from '@/components/ui/prompt-input';
-import { FileUpload, FileUploadContent, FileUploadTrigger } from '@/components/ui/file-upload';
-import { Button } from '@/components/ui/button';
-import Link from 'next/link';
-import { ArrowLeft, ArrowUp, Square, Paperclip, X } from 'lucide-react';
+import { useState, useCallback, useRef } from 'react'
+import Link from 'next/link'
+import {
+  ChatContainerRoot,
+  ChatContainerContent,
+  ChatContainerScrollAnchor,
+} from '@/components/ui/chat-container'
+import {
+  Message,
+  MessageContent,
+  MessageActions,
+  MessageAction,
+} from '@/components/ui/message'
+import {
+  PromptInput,
+  PromptInputTextarea,
+  PromptInputActions,
+  PromptInputAction,
+} from '@/components/ui/prompt-input'
+import { ScrollButton } from '@/components/ui/scroll-button'
+import { Button } from '@/components/ui/button'
+import {
+  FileUpload,
+  FileUploadContent,
+  FileUploadTrigger,
+} from '@/components/ui/file-upload'
+import { cn } from '@/lib/utils'
+import {
+  ArrowLeft,
+  ArrowUp,
+  Square,
+  Paperclip,
+  X,
+  Copy,
+  ThumbsUp,
+  ThumbsDown,
+  Pencil,
+  Trash,
+  Globe,
+  Mic,
+  MoreHorizontal,
+  Plus,
+} from 'lucide-react'
+
+// ---------------------------------------------
+// Types
+// ---------------------------------------------
 
 type ChatMessage = {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: Date;
-};
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+  timestamp: Date
+}
+
+// ---------------------------------------------
+// Component
+// ---------------------------------------------
 
 export default function ChatPage() {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [inputValue, setInputValue] = useState('');
-  const [files, setFiles] = useState<File[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [inputValue, setInputValue] = useState('')
+  const [files, setFiles] = useState<File[]>([])
+  const chatContainerRef = useRef<HTMLDivElement>(null)
 
-  const sendMessage = useCallback(async (content: string) => {
-    if (!content.trim()) return;
+  // Utility to copy message content
+  const copyToClipboard = (text: string) => {
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).catch(() => {})
+    }
+  }
 
-    const userMessage: ChatMessage = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: content.trim(),
-      timestamp: new Date(),
-    };
+  // -------------------------------------------
+  // Send message
+  // -------------------------------------------
+  const sendMessage = useCallback(
+    async (content: string) => {
+      if (!content.trim()) return
 
-    setMessages(prev => [...prev, userMessage]);
-    setInputValue('');
-    setIsLoading(true);
-
-    try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messages: [...messages, userMessage].map(msg => ({
-            role: msg.role,
-            content: msg.content,
-          })),
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to send message');
+      const userMessage: ChatMessage = {
+        id: Date.now().toString(),
+        role: 'user',
+        content: content.trim(),
+        timestamp: new Date(),
       }
 
-      const data = await response.json();
-      
-      const assistantMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: data.content,
-        timestamp: new Date(),
-      };
+      setMessages((prev) => [...prev, userMessage])
+      setInputValue('')
+      setIsLoading(true)
 
-      setMessages(prev => [...prev, assistantMessage]);
-    } catch (error) {
-      console.error('Error sending message:', error);
-      const errorMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: 'Sorry, I encountered an error. Please try again.',
-        timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, errorMessage]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [messages]);
+      try {
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            messages: [...messages, userMessage].map((msg) => ({
+              role: msg.role,
+              content: msg.content,
+            })),
+          }),
+        })
+
+        if (!response.ok) {
+          throw new Error('Failed to send message')
+        }
+
+        const data = await response.json()
+
+        const assistantMessage: ChatMessage = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: data.content,
+          timestamp: new Date(),
+        }
+
+        setMessages((prev) => [...prev, assistantMessage])
+      } catch (error) {
+        console.error('Error sending message:', error)
+        const errorMessage: ChatMessage = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: 'Sorry, I encountered an error. Please try again.',
+          timestamp: new Date(),
+        }
+        setMessages((prev) => [...prev, errorMessage])
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [messages]
+  )
 
   const handleFilesAdded = useCallback((newFiles: File[]) => {
-    setFiles((prev) => [...prev, ...newFiles]);
-  }, []);
+    setFiles((prev) => [...prev, ...newFiles])
+  }, [])
 
   const removeFile = useCallback((index: number) => {
-    setFiles((prev) => prev.filter((_, i) => i !== index));
-  }, []);
+    setFiles((prev) => prev.filter((_, i) => i !== index))
+  }, [])
 
   const handleSubmit = useCallback(() => {
     if (inputValue.trim() || files.length > 0) {
-      sendMessage(inputValue);
-      setFiles([]); // Clear files after sending
+      sendMessage(inputValue)
+      setFiles([]) // Clear files after sending
     }
-  }, [inputValue, files, sendMessage]);
+  }, [inputValue, files, sendMessage])
 
+  // -------------------------------------------
+  // Render
+  // -------------------------------------------
   return (
-    <div className="flex flex-col h-screen bg-background">
+    <div className="flex h-screen flex-col overflow-hidden bg-background">
+      {/* Header */}
       <header className="border-b p-4">
         <div className="flex items-center space-x-4">
-          <Link 
+                    <Link
             href="/"
-            className="flex items-center space-x-2 px-3 py-2 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
+            className="flex items-center justify-center p-2 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
-            <span className="text-sm font-medium">Back to Gallery</span>
           </Link>
-          <div>
-            <h1 className="text-1xl font-bold">AI Chat</h1>
-          </div>
+          <h1 className="text-lg font-bold">AI Chat</h1>
         </div>
       </header>
-      
-      <div className="flex-1 relative">
+
+      {/* Chat area */}
+      <div ref={chatContainerRef} className="relative flex-1 overflow-y-auto">
         <ChatContainerRoot className="h-full">
-          <ChatContainerContent className="p-4">
-            <div className="space-y-4">
-              {messages.length === 0 && (
-                <div className="text-center text-muted-foreground py-8">
-                  <h2 className="text-lg font-semibold mb-2">Welcome to OpenAI Chat</h2>
-                  <p>Start a conversation by typing a message below.</p>
-                </div>
-              )}
-              {messages.map((message) => (
-                <Message key={message.id} className="max-w-3xl">
-                  {message.role === 'assistant' ? (
-                    <MessageContent markdown className="">
-                      {message.content}
-                    </MessageContent>
+          <ChatContainerContent className="space-y-0 px-5 py-12">
+            {messages.map((message, index) => {
+              const isAssistant = message.role === 'assistant'
+              const isLastMessage = index === messages.length - 1
+
+              return (
+                <Message
+                  key={message.id}
+                  className={cn(
+                    'mx-auto flex w-full max-w-3xl flex-col gap-2 px-6',
+                    isAssistant ? 'items-start' : 'items-end'
+                  )}
+                >
+                  {isAssistant ? (
+                    <div className="group flex w-full flex-col gap-0">
+                      <MessageContent
+                        markdown
+                        className="text-foreground prose flex-1 rounded-lg bg-transparent p-0"
+                      >
+                        {message.content}
+                      </MessageContent>
+                      <MessageActions
+                        className={cn(
+                          '-ml-2.5 flex gap-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100',
+                          isLastMessage && 'opacity-100'
+                        )}
+                      >
+                        <MessageAction tooltip="Copy" delayDuration={100}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="rounded-full"
+                            onClick={() => copyToClipboard(message.content)}
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                        </MessageAction>
+                        <MessageAction tooltip="Upvote" delayDuration={100}>
+                          <Button variant="ghost" size="icon" className="rounded-full">
+                            <ThumbsUp className="h-4 w-4" />
+                          </Button>
+                        </MessageAction>
+                        <MessageAction tooltip="Downvote" delayDuration={100}>
+                          <Button variant="ghost" size="icon" className="rounded-full">
+                            <ThumbsDown className="h-4 w-4" />
+                          </Button>
+                        </MessageAction>
+                      </MessageActions>
+                    </div>
                   ) : (
-                    <MessageContent className="bg-primary text-primary-foreground ml-auto">
-                      {message.content}
-                    </MessageContent>
+                    <div className="group flex flex-col items-end gap-1">
+                      <MessageContent className="bg-muted text-primary max-w-[85%] rounded-3xl px-5 py-2.5 sm:max-w-[75%]">
+                        {message.content}
+                      </MessageContent>
+                      <MessageActions className="flex gap-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+                        <MessageAction tooltip="Edit" delayDuration={100}>
+                          <Button variant="ghost" size="icon" className="rounded-full">
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        </MessageAction>
+                        <MessageAction tooltip="Delete" delayDuration={100}>
+                          <Button variant="ghost" size="icon" className="rounded-full">
+                            <Trash className="h-4 w-4" />
+                          </Button>
+                        </MessageAction>
+                        <MessageAction tooltip="Copy" delayDuration={100}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="rounded-full"
+                            onClick={() => copyToClipboard(message.content)}
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                        </MessageAction>
+                      </MessageActions>
+                    </div>
                   )}
                 </Message>
-              ))}
-              {isLoading && (
-                <Message className="max-w-3xl">
-                  <div className="rounded-lg p-2 text-foreground bg-secondary prose break-words whitespace-normal">
-                    <div className="flex items-center space-x-2">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-                      <span>Thinking...</span>
-                    </div>
+              )
+            })}
+
+            {isLoading && (
+              <Message className="mx-auto flex w-full max-w-3xl flex-col gap-2 px-6 items-start">
+                <div className="rounded-lg p-2 text-foreground bg-secondary prose break-words whitespace-normal">
+                  <div className="flex items-center space-x-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
+                    <span>Thinking...</span>
                   </div>
-                </Message>
-              )}
-              <ChatContainerScrollAnchor />
-            </div>
+                </div>
+              </Message>
+            )}
+            <ChatContainerScrollAnchor />
           </ChatContainerContent>
-          <div className="absolute bottom-4 right-4">
-            <ScrollButton />
+          <div className="absolute bottom-4 left-1/2 flex w-full max-w-3xl -translate-x-1/2 justify-end px-5">
+            <ScrollButton className="shadow-sm" />
           </div>
         </ChatContainerRoot>
       </div>
 
-      <div className="border-t p-4">
-        <div className="max-w-4xl mx-auto">
+      {/* Prompt input + file upload */}
+      <div className="bg-background z-10 shrink-0 px-3 pb-3 md:px-5 md:pb-5">
+        <div className="mx-auto max-w-3xl">
           <FileUpload
             onFilesAdded={handleFilesAdded}
             accept=".jpg,.jpeg,.png,.pdf,.docx,.txt,.md"
           >
             <PromptInput
+              isLoading={isLoading}
               value={inputValue}
               onValueChange={setInputValue}
               onSubmit={handleSubmit}
-              isLoading={isLoading}
-              className="w-full"
+              className="border-input bg-popover relative z-10 w-full rounded-3xl border p-0 pt-1 shadow-xs"
             >
+              {/* Attachments preview */}
               {files.length > 0 && (
                 <div className="grid grid-cols-2 gap-2 pb-2">
                   {files.map((file, index) => (
                     <div
                       key={index}
                       className="bg-secondary flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm"
-                      onClick={e => e.stopPropagation()}
+                      onClick={(e) => e.stopPropagation()}
                     >
                       <div className="flex items-center gap-2">
                         <Paperclip className="size-4" />
-                        <span className="max-w-[120px] truncate text-sm">
-                          {file.name}
-                        </span>
+                        <span className="max-w-[120px] truncate text-sm">{file.name}</span>
                       </div>
                       <button
                         onClick={() => removeFile(index)}
@@ -191,40 +309,66 @@ export default function ChatPage() {
                 </div>
               )}
 
-              <PromptInputTextarea 
-                placeholder="Type a message or drop files..." 
+              <PromptInputTextarea
+                placeholder="Type a message or drop files..."
                 disabled={isLoading}
+                className="min-h-[44px] pt-3 pl-4 text-base leading-[1.3]"
               />
 
-              <PromptInputActions className="flex items-center justify-between gap-2 pt-2">
-                <PromptInputAction tooltip="Attach files">
-                  <FileUploadTrigger asChild>
-                    <div className="hover:bg-secondary-foreground/10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-2xl">
-                      <Paperclip className="text-primary size-5" />
-                    </div>
-                  </FileUploadTrigger>
-                </PromptInputAction>
+              <PromptInputActions className="mt-5 flex w-full items-center justify-between gap-2 px-3 pb-3">
+                <div className="flex items-center gap-2">
+                  {/* Attach files */}
+                  <PromptInputAction tooltip="Attach files">
+                    <FileUploadTrigger asChild>
+                      <div className="hover:bg-secondary-foreground/10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-2xl">
+                        <Paperclip className="text-primary size-5" />
+                      </div>
+                    </FileUploadTrigger>
+                  </PromptInputAction>
 
-                <PromptInputAction
-                  tooltip={isLoading ? "Stop generation" : "Send message"}
-                >
+                  {/* Add new action */}
+                  <PromptInputAction tooltip="Add a new action">
+                    <Button variant="outline" size="icon" className="size-9 rounded-full">
+                      <Plus size={18} />
+                    </Button>
+                  </PromptInputAction>
+
+                  {/* Search */}
+                  <PromptInputAction tooltip="Search">
+                    <Button variant="outline" className="rounded-full">
+                      <Globe size={18} />
+                      Search
+                    </Button>
+                  </PromptInputAction>
+
+                  {/* More actions */}
+                  <PromptInputAction tooltip="More actions">
+                    <Button variant="outline" size="icon" className="size-9 rounded-full">
+                      <MoreHorizontal size={18} />
+                    </Button>
+                  </PromptInputAction>
+                </div>
+                <div className="flex items-center gap-2">
+                  {/* Voice input */}
+                  <PromptInputAction tooltip="Voice input">
+                    <Button variant="outline" size="icon" className="size-9 rounded-full">
+                      <Mic size={18} />
+                    </Button>
+                  </PromptInputAction>
+
                   <Button
-                    variant="default"
                     size="icon"
-                    className="h-8 w-8 rounded-full"
+                    disabled={(!inputValue.trim() && files.length === 0) || isLoading}
                     onClick={handleSubmit}
-                    disabled={(!inputValue.trim() && files.length === 0) && !isLoading}
+                    className="size-9 rounded-full"
                   >
-                    {isLoading ? (
-                      <Square className="size-5 fill-current" />
-                    ) : (
-                      <ArrowUp className="size-5" />
-                    )}
+                    {!isLoading ? <ArrowUp size={18} /> : <Square className="size-5 fill-current" />}
                   </Button>
-                </PromptInputAction>
+                </div>
               </PromptInputActions>
             </PromptInput>
 
+            {/* Drag & drop area */}
             <FileUploadContent>
               <div className="flex min-h-[200px] w-full items-center justify-center backdrop-blur-sm">
                 <div className="bg-background/90 m-4 w-full max-w-md rounded-lg border p-8 shadow-lg">
@@ -243,9 +387,7 @@ export default function ChatPage() {
                       />
                     </svg>
                   </div>
-                  <h3 className="mb-2 text-center text-base font-medium">
-                    Drop files to upload
-                  </h3>
+                  <h3 className="mb-2 text-center text-base font-medium">Drop files to upload</h3>
                   <p className="text-muted-foreground text-center text-sm">
                     Release to add files to your message
                   </p>
@@ -256,5 +398,5 @@ export default function ChatPage() {
         </div>
       </div>
     </div>
-  );
+  )
 }
