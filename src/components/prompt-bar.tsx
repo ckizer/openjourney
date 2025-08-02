@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ImageIcon } from "lucide-react";
+import { ArrowUp, Square } from "lucide-react";
 import Image from "next/image";
 import { SettingsDropdown } from "@/components/settings-dropdown";
 import {
@@ -78,20 +78,24 @@ export function PromptBar({ onGenerate, value, onValueChange }: PromptBarProps) 
                   placeholder="Describe what you want to create..."
                   className="text-base"
                 />
-                <PromptInputActions className="hidden sm:flex">
-                  <PromptInputAction tooltip="Generate images">
+                <PromptInputActions className="justify-end pt-2">
+                  <PromptInputAction tooltip="Settings" className="hidden sm:block">
+                    <SettingsDropdown />
+                  </PromptInputAction>
+                  <PromptInputAction tooltip={isGenerating ? "Stop generation" : "Generate images"}>
                     <Button
-                      size="sm"
+                      variant="default"
+                      size="icon"
                       onClick={handleGenerate}
                       disabled={!prompt.trim() || isGenerating}
-                      className="h-8"
+                      className="h-8 w-8 rounded-full"
                     >
-                      <ImageIcon className="w-4 h-4 mr-1" />
-                      Generate
+                      {isGenerating ? (
+                        <Square className="size-4 fill-current" />
+                      ) : (
+                        <ArrowUp className="size-4" />
+                      )}
                     </Button>
-                  </PromptInputAction>
-                  <PromptInputAction tooltip="Settings">
-                    <SettingsDropdown />
                   </PromptInputAction>
                 </PromptInputActions>
               </PromptInput>
@@ -105,8 +109,12 @@ export function PromptBar({ onGenerate, value, onValueChange }: PromptBarProps) 
               disabled={!prompt.trim() || isGenerating}
               className="flex-1 h-10"
             >
-              <ImageIcon className="w-4 h-4 mr-2" />
-              Generate Images
+              {isGenerating ? (
+                <Square className="w-4 h-4 mr-2 fill-current" />
+              ) : (
+                <ArrowUp className="w-4 h-4 mr-2" />
+              )}
+              {isGenerating ? "Generating..." : "Generate Images"}
             </Button>
             <SettingsDropdown />
           </div>
