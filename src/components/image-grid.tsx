@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Loader } from "@/components/ui/loader";
 import { ClockIcon, DownloadIcon, ExpandIcon } from "lucide-react";
 import { motion } from "framer-motion";
 import Image from "next/image";
@@ -162,8 +163,9 @@ export function ImageGrid({ generation, onViewFullscreen, onUsePrompt }: ImageGr
               {generation.images.length} image{generation.images.length !== 1 ? 's' : ''}
             </Badge>
             {generation.isLoading && (
-              <Badge variant="default" className="text-xs bg-blue-500 animate-pulse">
-                🎬 Generating...
+              <Badge variant="default" className="text-xs bg-blue-500 flex items-center gap-1">
+                <Loader variant="typing" size="sm" />
+                Generating...
               </Badge>
             )}
           </div>

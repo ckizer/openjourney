@@ -3,6 +3,7 @@
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Loader } from "@/components/ui/loader";
 import { SparklesIcon, ClockIcon } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -44,11 +45,11 @@ export function LoadingGrid({ prompt }: LoadingGridProps) {
                 Images
               </Badge>
               <motion.div
-                className="flex items-center gap-1"
+                className="flex items-center gap-2"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
               >
-                <SparklesIcon className="w-3 h-3 animate-pulse text-primary" />
+                <Loader variant="typing" size="sm" />
                 <span className="text-xs text-primary">Generating...</span>
               </motion.div>
             </div>

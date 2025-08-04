@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useRef } from 'react'
-import Link from 'next/link'
+import { PrimaryNavTabs } from "@/components/primary-nav-tabs"
 import {
   ChatContainerRoot,
   ChatContainerContent,
@@ -27,8 +27,20 @@ import {
   FileUploadTrigger,
 } from '@/components/ui/file-upload'
 import { cn } from '@/lib/utils'
+import { Loader } from '@/components/ui/loader'
 import {
-  ArrowLeft,
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarProvider,
+  SidebarTrigger,
+} from '@/components/ui/sidebar'
+import {
   ArrowUp,
   Square,
   Paperclip,
@@ -42,6 +54,7 @@ import {
   Mic,
   MoreHorizontal,
   Plus,
+  Menu,
 } from 'lucide-react'
 
 // ---------------------------------------------
@@ -53,6 +66,54 @@ type ChatMessage = {
   role: 'user' | 'assistant'
   content: string
   timestamp: Date
+}
+
+// ---------------------------------------------
+// Conversation History (sample)
+// ---------------------------------------------
+
+const conversationHistory = [
+  {
+    period: 'Today',
+    conversations: [
+      { id: '1', title: 'New Chat', lastMessage: 'Start chatting', timestamp: Date.now() },
+    ],
+  },
+]
+
+// ---------------------------------------------
+// Sidebar component
+// ---------------------------------------------
+
+function ChatSidebar() {
+  return (
+    <Sidebar>
+      <SidebarHeader className="flex flex-row items-center justify-between gap-2 px-2 py-4">
+        <div className="flex flex-row items-center gap-2 px-2">
+          <div className="bg-primary/10 size-8 rounded-md" />
+          <div className="text-md font-base text-primary tracking-tight">Chat</div>
+        </div>
+      </SidebarHeader>
+      <SidebarContent className="pt-4">
+        <div className="px-4">
+          <Button variant="outline" className="mb-4 flex w-full items-center gap-2">
+            <Plus className="size-4" />
+            <span>New Chat</span>
+          </Button>
+        </div>
+        {conversationHistory.map((group) => (
+          <SidebarGroup key={group.period}>
+            <SidebarGroupLabel>{group.period}</SidebarGroupLabel>
+            <SidebarMenu>
+              {group.conversations.map((conv) => (
+                <SidebarMenuButton key={conv.id}>{conv.title}</SidebarMenuButton>
+              ))}
+            </SidebarMenu>
+          </SidebarGroup>
+        ))}
+      </SidebarContent>
+    </Sidebar>
+  )
 }
 
 // ---------------------------------------------
@@ -154,17 +215,17 @@ export default function ChatPage() {
   // Render
   // -------------------------------------------
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-background">
+    <SidebarProvider>
+      <ChatSidebar />
+      <SidebarInset>
+        <div className="flex h-screen flex-col overflow-hidden bg-background">
       {/* Header */}
-      <header className="border-b p-4">
-        <div className="flex items-center space-x-4">
-                    <Link
-            href="/"
-            className="flex items-center justify-center p-2 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-          <h1 className="text-lg font-bold">AI Chat</h1>
+      <header className="border-b p-2">
+        <div className="flex items-center space-x-2">
+                    <SidebarTrigger className="rounded-full p-2 hover:bg-accent hover:text-accent-foreground transition-colors">
+            <Menu className="h-4 w-4" />
+          </SidebarTrigger>
+          <PrimaryNavTabs />
         </div>
       </header>
 
@@ -257,8 +318,8 @@ export default function ChatPage() {
               <Message className="mx-auto flex w-full max-w-3xl flex-col gap-2 px-6 items-start">
                 <div className="rounded-lg p-2 text-foreground bg-secondary prose break-words whitespace-normal">
                   <div className="flex items-center space-x-2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
-                    <span>Thinking...</span>
+                    <Loader variant="typing" size="sm" />
+                    <span>Generating...</span>
                   </div>
                 </div>
               </Message>
@@ -397,6 +458,8 @@ export default function ChatPage() {
           </FileUpload>
         </div>
       </div>
-    </div>
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
   )
 }
