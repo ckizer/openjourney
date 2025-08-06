@@ -1,6 +1,6 @@
 "use client";
 
-import { PromptBar } from "@/components/prompt-bar";
+
 import { ContentGrid } from "@/components/content-grid";
 import { useState, useCallback } from "react";
 import { PrimaryNavTabs } from "@/components/primary-nav-tabs";
@@ -64,6 +64,7 @@ function ImagineSidebar() {
 export default function Home() {
   const [generateHandler, setGenerateHandler] = useState<((prompt: string) => void) | null>(null);
   const [promptValue, setPromptValue] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const handleSetGenerator = useCallback((handler: (prompt: string) => void) => {
     setGenerateHandler(() => handler);
@@ -72,6 +73,29 @@ export default function Home() {
   const handleUsePrompt = useCallback((prompt: string) => {
     setPromptValue(prompt);
   }, []);
+
+  const handleGenerate = useCallback(() => {
+    if (!promptValue.trim()) return;
+    
+    setIsGenerating(true);
+    
+    // Call the generator handler to add new generation
+    if (generateHandler) {
+      generateHandler(promptValue.trim());
+    }
+    
+    // Clear the prompt
+    setPromptValue("");
+    
+    // Reset generating state
+    setTimeout(() => {
+      setIsGenerating(false);
+    }, 500);
+  }, [promptValue, generateHandler]);
+
+  const handleSubmit = useCallback(() => {
+    handleGenerate();
+  }, [handleGenerate]);
 
   return (
     <SidebarProvider>
@@ -88,16 +112,7 @@ export default function Home() {
             </div>
           </header>
 
-          {/* Fixed prompt bar */}
-          <div className="border-b bg-background">
-            <div className="px-4 py-2">
-              <PromptBar 
-                onGenerate={generateHandler || undefined}
-                value={promptValue}
-                onValueChange={setPromptValue}
-              />
-            </div>
-          </div>
+
           
           {/* Main content area */}
           <main className="flex-1 min-h-0 overflow-auto">
@@ -108,6 +123,55 @@ export default function Home() {
               />
             </div>
           </main>
+
+          {/* Prompt input at bottom - matching chat page layout */}
+          <div className="bg-background z-10 shrink-0 px-3 pb-3 md:px-5 md:pb-5">
+            <div className="mx-auto max-w-3xl">
+              <PromptInput
+                isLoading={isGenerating}
+                value={promptValue}
+                onValueChange={setPromptValue}
+                onSubmit={handleSubmit}
+                className="border-input bg-popover relative z-10 w-full rounded-3xl border p-0 pt-1 shadow-xs"
+              >
+                <PromptInputTextarea
+                  placeholder="Describe what you want to create..."
+                  disabled={isGenerating}
+                  className="min-h-[44px] pt-3 pl-4 text-base leading-[1.3]"
+                />
+
+                <PromptInputActions className="mt-5 flex w-full items-center justify-between gap-2 px-3 pb-3">
+                  <div className="flex items-center gap-2">
+                    {/* OpenJourney Logo */}
+                    <div className="flex-shrink-0 hidden sm:block">
+                      <Image
+                        src="/openjourney-logo.svg"
+                        alt="OpenJourney"
+                        width={140}
+                        height={30}
+                        className="h-6 w-auto dark:invert"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {/* Settings */}
+                    <PromptInputAction tooltip="Settings">
+                      <SettingsDropdown />
+                    </PromptInputAction>
+
+                    <Button
+                      size="icon"
+                      disabled={!promptValue.trim() || isGenerating}
+                      onClick={handleSubmit}
+                      className="size-9 rounded-full"
+                    >
+                      {!isGenerating ? <ArrowUp size={18} /> : <Square className="size-5 fill-current" />}
+                    </Button>
+                  </div>
+                </PromptInputActions>
+              </PromptInput>
+            </div>
+          </div>
         </div>
       </SidebarInset>
     </SidebarProvider>
