@@ -31,7 +31,7 @@ export function PrimaryNavTabs({ className }: { className?: string }) {
   return (
     <Tabs value={activeValue} onValueChange={handleTabChange} className={className}>
       <ScrollArea>
-        <TabsList className="mb-3">
+        <TabsList className="">
           <TabsTrigger value="ask">
             <MessageSquare
               className="-ms-0.5 me-1.5 opacity-60"

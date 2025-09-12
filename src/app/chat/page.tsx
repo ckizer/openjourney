@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { PrimaryNavTabs } from "@/components/primary-nav-tabs"
 import {
   ChatContainerRoot,
@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/chat-container'
 import {
   Message,
+  MessageAvatar,
   MessageContent,
   MessageActions,
   MessageAction,
@@ -40,14 +41,15 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from '@/components/ui/sidebar'
+import { SettingsDropdown } from '@/components/settings-dropdown'
+import { SlashCommandMenu } from '@/components/slash-command-menu'
+import { useSlashCommand } from '@/hooks/use-slash-command'
 import {
   ArrowUp,
   Square,
   Paperclip,
   X,
   Copy,
-  ThumbsUp,
-  ThumbsDown,
   Pencil,
   Trash,
   Globe,
@@ -55,6 +57,7 @@ import {
   MoreHorizontal,
   Plus,
   Menu,
+  Speaker,
 } from 'lucide-react'
 
 // ---------------------------------------------
@@ -126,6 +129,43 @@ export default function ChatPage() {
   const [inputValue, setInputValue] = useState('')
   const [files, setFiles] = useState<File[]>([])
   const chatContainerRef = useRef<HTMLDivElement>(null)
+  const promptContainerRef = useRef<HTMLDivElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null!)
+
+  // Slash command functionality
+  const {
+    isOpen: isSlashMenuOpen,
+    searchQuery: slashSearchQuery,
+    menuPosition: slashMenuPosition,
+    selectedIndex: slashSelectedIndex,
+    handleCommandSelect,
+    handleKeyDown: handleSlashKeyDown,
+    closeMenu: closeSlashMenu
+  } = useSlashCommand({
+    value: inputValue,
+    onValueChange: setInputValue,
+    textareaRef
+  })
+
+  // Close slash menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isSlashMenuOpen) {
+        const target = event.target as Node
+        const isTextarea = textareaRef.current?.contains(target)
+        const isMenu = document.querySelector('[data-slash-menu]')?.contains(target)
+        
+        if (!isTextarea && !isMenu) {
+          closeSlashMenu()
+        }
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isSlashMenuOpen, closeSlashMenu])
 
   // Utility to copy message content
   const copyToClipboard = (text: string) => {
@@ -212,20 +252,48 @@ export default function ChatPage() {
   }, [inputValue, files, sendMessage])
 
   // -------------------------------------------
+  // Keyboard shortcuts: '/' or Cmd/Ctrl+K to focus input
+  // -------------------------------------------
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const isSlash = e.key === '/' && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey
+      const isCommandK = (e.key === 'k' || e.key === 'K') && (e.metaKey || e.ctrlKey)
+      if (!(isSlash || isCommandK)) return
+
+      const active = document.activeElement as HTMLElement | null
+      const isTyping = !!active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)
+      if (isTyping) return
+
+      e.preventDefault()
+      const textarea = promptContainerRef.current?.querySelector(
+        'textarea[data-slot="textarea"]'
+      ) as HTMLTextAreaElement | null
+      textarea?.focus()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [])
+
+  // -------------------------------------------
   // Render
   // -------------------------------------------
   return (
     <SidebarProvider>
       <ChatSidebar />
       <SidebarInset>
-        <div className="flex h-screen flex-col overflow-hidden bg-background">
+        <div className="flex h-screen flex-col overflow-hidden bg-[#f8f7f6]">
       {/* Header */}
       <header className="border-b p-2">
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
                     <SidebarTrigger className="rounded-full p-2 hover:bg-accent hover:text-accent-foreground transition-colors">
             <Menu className="h-4 w-4" />
           </SidebarTrigger>
           <PrimaryNavTabs />
+          </div>
+          <div className="flex items-center gap-1">
+            <SettingsDropdown />
+          </div>
         </div>
       </header>
 
@@ -246,68 +314,73 @@ export default function ChatPage() {
                   )}
                 >
                   {isAssistant ? (
-                    <div className="group flex w-full flex-col gap-0">
-                      <MessageContent
-                        markdown
-                        className="text-foreground prose flex-1 rounded-lg bg-transparent p-0"
-                      >
-                        {message.content}
-                      </MessageContent>
-                      <MessageActions
-                        className={cn(
-                          '-ml-2.5 flex gap-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100',
-                          isLastMessage && 'opacity-100'
-                        )}
-                      >
-                        <MessageAction tooltip="Copy" delayDuration={100}>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="rounded-full"
-                            onClick={() => copyToClipboard(message.content)}
-                          >
-                            <Copy className="h-4 w-4" />
-                          </Button>
-                        </MessageAction>
-                        <MessageAction tooltip="Upvote" delayDuration={100}>
-                          <Button variant="ghost" size="icon" className="rounded-full">
-                            <ThumbsUp className="h-4 w-4" />
-                          </Button>
-                        </MessageAction>
-                        <MessageAction tooltip="Downvote" delayDuration={100}>
-                          <Button variant="ghost" size="icon" className="rounded-full">
-                            <ThumbsDown className="h-4 w-4" />
-                          </Button>
-                        </MessageAction>
-                      </MessageActions>
+                    <div className="flex w-full items-start gap-3">
+                      <MessageAvatar src="/ai-avatar.svg" alt="Assistant" fallback="OJ" />
+                      <div className="group flex w-full flex-col gap-0">
+                        <MessageContent
+                          markdown
+                          className="text-foreground prose flex-1 rounded-lg bg-transparent p-0"
+                        >
+                          {message.content}
+                        </MessageContent>
+                        <MessageActions
+                          className={cn(
+                            '-ml-2.5 flex gap-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100',
+                            isLastMessage && 'opacity-100'
+                          )}
+                        >
+                          <MessageAction tooltip="Copy" delayDuration={100}>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="rounded-full"
+                              onClick={() => copyToClipboard(message.content)}
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                          </MessageAction>
+                          <MessageAction tooltip="Speak" delayDuration={100}>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="rounded-full"
+                            >
+                              <Speaker className="h-4 w-4" />
+                            </Button>
+                          </MessageAction>
+                        </MessageActions>
+                      </div>
                     </div>
                   ) : (
-                    <div className="group flex flex-col items-end gap-1">
-                      <MessageContent className="bg-muted text-primary max-w-[85%] rounded-3xl px-5 py-2.5 sm:max-w-[75%]">
-                        {message.content}
-                      </MessageContent>
-                      <MessageActions className="flex gap-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
-                        <MessageAction tooltip="Edit" delayDuration={100}>
-                          <Button variant="ghost" size="icon" className="rounded-full">
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                        </MessageAction>
-                        <MessageAction tooltip="Delete" delayDuration={100}>
-                          <Button variant="ghost" size="icon" className="rounded-full">
-                            <Trash className="h-4 w-4" />
-                          </Button>
-                        </MessageAction>
-                        <MessageAction tooltip="Copy" delayDuration={100}>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="rounded-full"
-                            onClick={() => copyToClipboard(message.content)}
-                          >
-                            <Copy className="h-4 w-4" />
-                          </Button>
-                        </MessageAction>
-                      </MessageActions>
+                    <div className="flex w-full items-start justify-end gap-3">
+                      <div className="group flex flex-col items-end gap-1">
+                        <MessageContent className="bg-muted text-primary max-w-[85%] rounded-3xl px-5 py-2.5 sm:max-w-[75%]">
+                          {message.content}
+                        </MessageContent>
+                        <MessageActions className="flex gap-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+                          <MessageAction tooltip="Edit" delayDuration={100}>
+                            <Button variant="ghost" size="icon" className="rounded-full">
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          </MessageAction>
+                          <MessageAction tooltip="Delete" delayDuration={100}>
+                            <Button variant="ghost" size="icon" className="rounded-full">
+                              <Trash className="h-4 w-4" />
+                            </Button>
+                          </MessageAction>
+                          <MessageAction tooltip="Copy" delayDuration={100}>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="rounded-full"
+                              onClick={() => copyToClipboard(message.content)}
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                          </MessageAction>
+                        </MessageActions>
+                      </div>
+                      <MessageAvatar src="/vercel.svg" alt="You" fallback="You" />
                     </div>
                   )}
                 </Message>
@@ -333,8 +406,8 @@ export default function ChatPage() {
       </div>
 
       {/* Prompt input + file upload */}
-      <div className="bg-background z-10 shrink-0 px-3 pb-3 md:px-5 md:pb-5">
-        <div className="mx-auto max-w-3xl">
+      <div className="bg-[#f8f7f6] z-10 shrink-0 px-3 pb-3 md:px-5 md:pb-5">
+        <div ref={promptContainerRef} className="mx-auto max-w-3xl">
           <FileUpload
             onFilesAdded={handleFilesAdded}
             accept=".jpg,.jpeg,.png,.pdf,.docx,.txt,.md"
@@ -371,9 +444,15 @@ export default function ChatPage() {
               )}
 
               <PromptInputTextarea
-                placeholder="Type a message or drop files..."
+                ref={textareaRef}
+                placeholder="Type a message or drop files... (try typing / for commands)"
                 disabled={isLoading}
                 className="min-h-[44px] pt-3 pl-4 text-base leading-[1.3]"
+                onKeyDown={(e) => {
+                  // Let slash command handler try to handle the key first
+                  handleSlashKeyDown(e)
+                  // Default textarea key handling will continue
+                }}
               />
 
               <PromptInputActions className="mt-5 flex w-full items-center justify-between gap-2 px-3 pb-3">
@@ -460,6 +539,16 @@ export default function ChatPage() {
       </div>
         </div>
       </SidebarInset>
+
+      {/* Slash Command Menu */}
+      <SlashCommandMenu
+        isOpen={isSlashMenuOpen}
+        onClose={closeSlashMenu}
+        onSelect={handleCommandSelect}
+        position={slashMenuPosition}
+        searchQuery={slashSearchQuery}
+        selectedIndex={slashSelectedIndex}
+      />
     </SidebarProvider>
   )
 }

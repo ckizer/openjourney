@@ -23,13 +23,13 @@ const CHAT_CONFIG = {
   systemPrompt: SYSTEM_PROMPTS.default, // Change to any prompt above
   
   // 🤖 MODEL OPTIONS:
-  // Standard models: 'gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo'
+  // Standard models: 'gpt-5', 'gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo'
   // Reasoning models: 'o3-mini', 'o3', 'o1-mini', 'o1-preview'
-  model: 'o3-mini',                     
-  
+  // You can override via env: OPENAI_CHAT_MODEL
+  model: process.env.OPENAI_CHAT_MODEL || 'gpt-5',
   maxCompletionTokens: 25000,           // For o3/o1 models: includes reasoning + response tokens
-                                        // For standard models: just response tokens
-  temperature: 0.7,                     // Will be forced to 1.0 for reasoning models
+                                      // For standard models: just response tokens
+  temperature: 1,                     // Will be forced to 1.0 for reasoning models
 };
 
 export async function POST(request: NextRequest) {
@@ -61,29 +61,73 @@ export async function POST(request: NextRequest) {
 
     // Configure parameters based on model type
     const isReasoningModel = CHAT_CONFIG.model.startsWith('o1') || CHAT_CONFIG.model.startsWith('o3');
+    const isResponsesApiModel = CHAT_CONFIG.model.startsWith('gpt-5');
     
-    const completionParams = {
-      model: CHAT_CONFIG.model,
-      messages: allMessages,
-      ...(isReasoningModel 
-        ? {
-            // o1/o3 models use max_completion_tokens and fixed temperature
-            max_completion_tokens: CHAT_CONFIG.maxCompletionTokens,
-            temperature: 1.0 as const, // Required to be 1.0 for reasoning models
+    let responseText: string | undefined;
+
+    if (isResponsesApiModel) {
+      // Use the Responses API for GPT-5 per OpenAI latest-model guide
+      const inputText = allMessages
+        .map((m) => `${m.role}: ${typeof m.content === 'string' ? m.content : ''}`)
+        .join('\n\n');
+
+      const resp = await openai.responses.create({
+        model: CHAT_CONFIG.model,
+        input: inputText,
+        // For Responses API, use max_output_tokens
+        max_output_tokens: CHAT_CONFIG.maxCompletionTokens,
+        temperature: isReasoningModel ? 1.0 : (CHAT_CONFIG.temperature ?? 0.7),
+      });
+
+      // Prefer output_text if present; otherwise, try to derive text from output content blocks
+      const extractResponseText = (r: unknown): string | undefined => {
+        if (r && typeof r === 'object') {
+          const obj = r as { output_text?: unknown; output?: unknown };
+          if (typeof obj.output_text === 'string' && obj.output_text.length > 0) {
+            return obj.output_text;
           }
-        : {
-            // Standard models use max_tokens and configurable temperature
-            max_tokens: CHAT_CONFIG.maxCompletionTokens,
-            temperature: CHAT_CONFIG.temperature || 0.7,
+          if (Array.isArray(obj.output)) {
+            const outputArray = obj.output as Array<{ content?: Array<{ type?: string; text?: string }> }>;
+            const textParts: string[] = [];
+            for (const item of outputArray) {
+              if (Array.isArray(item.content)) {
+                for (const part of item.content) {
+                  if ((part.type === 'output_text' || part.type === 'text') && typeof part.text === 'string') {
+                    textParts.push(part.text);
+                  }
+                }
+              }
+            }
+            if (textParts.length > 0) {
+              return textParts.join('\n');
+            }
           }
-      ),
-    };
+        }
+        return undefined;
+      };
+      responseText = extractResponseText(resp);
+    } else {
+      const completionParams = {
+        model: CHAT_CONFIG.model,
+        messages: allMessages,
+        ...(isReasoningModel
+          ? {
+              // o1/o3 models use max_completion_tokens and fixed temperature
+              max_completion_tokens: CHAT_CONFIG.maxCompletionTokens,
+              temperature: 1.0 as const,
+            }
+          : {
+              // Standard models use max_tokens and configurable temperature
+              max_tokens: CHAT_CONFIG.maxCompletionTokens,
+              temperature: CHAT_CONFIG.temperature || 0.7,
+            }),
+      } as const;
 
-    const completion = await openai.chat.completions.create(completionParams);
+      const completion = await openai.chat.completions.create(completionParams);
+      responseText = completion.choices[0]?.message?.content ?? undefined;
+    }
 
-    const responseMessage = completion.choices[0]?.message;
-
-    if (!responseMessage) {
+    if (!responseText) {
       return NextResponse.json(
         { error: 'No response from OpenAI' },
         { status: 500 }
@@ -91,7 +135,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({
-      content: responseMessage.content,
+      content: responseText,
     });
   } catch (error) {
     console.error('OpenAI API error:', error);
