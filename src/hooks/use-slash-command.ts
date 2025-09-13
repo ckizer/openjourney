@@ -187,6 +187,10 @@ export function useSlashCommand({ value, onValueChange, textareaRef }: UseSlashC
     return false // Let other keys pass through for continued typing
   }
 
+  const setSearch = (q: string) => {
+    setSearchQuery(q)
+  }
+
   return {
     isOpen,
     searchQuery,
@@ -194,6 +198,7 @@ export function useSlashCommand({ value, onValueChange, textareaRef }: UseSlashC
     selectedIndex,
     handleCommandSelect,
     handleKeyDown,
+    setSearchQuery: setSearch,
     closeMenu: () => {
       setIsOpen(false)
       slashIndexRef.current = -1

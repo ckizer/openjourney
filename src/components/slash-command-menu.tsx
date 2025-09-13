@@ -3,13 +3,13 @@
 import { useState, useEffect } from 'react'
 import { cn } from '@/lib/utils'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuGroup,
-} from '@/components/ui/dropdown-menu'
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+} from '@/components/ui/command'
 import { 
   Bot, 
   Code, 
@@ -106,6 +106,7 @@ export function SlashCommandMenu({
   selectedIndex = 0
 }: SlashCommandMenuProps) {
   const [filteredCommands, setFilteredCommands] = useState<SlashCommand[]>(SLASH_COMMANDS)
+  const [hoveredId, setHoveredId] = useState<string | null>(null)
 
   // Filter commands based on search query
   useEffect(() => {
@@ -133,66 +134,70 @@ export function SlashCommandMenu({
   if (!isOpen) return null
 
   return (
-    <DropdownMenu open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DropdownMenuContent 
-        className="w-80"
-        style={{
-          position: 'fixed',
-          top: position.top,
-          left: position.left,
-          transform: 'none'
-        }}
-        data-slash-menu
-        side="bottom"
-        align="start"
-        sideOffset={0}
-      >
-        <DropdownMenuLabel className="text-xs">
-          Slash Commands {searchQuery && `(filtered by "${searchQuery}")`}
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        
-        {Object.entries(groupedCommands).map(([category, commands]) => (
-          <DropdownMenuGroup key={category}>
-            <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
-              {category}
-            </DropdownMenuLabel>
-            {commands.map((command, index) => {
-              const globalIndex = filteredCommands.indexOf(command)
-              const isSelected = globalIndex === selectedIndex
-              
-              return (
-                <DropdownMenuItem
-                  key={command.id}
-                  onSelect={() => {
-                    onSelect(command)
-                    onClose()
-                  }}
-                  className={cn(
-                    // Ensure hover/keyboard highlight shows clearly (Radix data state + hover)
-                    "flex items-center gap-3 px-2 py-2 cursor-pointer hover:bg-blue-50 hover:text-blue-900 focus:bg-blue-50 focus:text-blue-900 data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-900",
-                    isSelected && "bg-blue-50 text-blue-900"
-                  )}
-                >
-                  <div className="flex-shrink-0 text-muted-foreground">
-                    {command.icon}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-sm">{command.label}</div>
-                    <div className="text-xs text-muted-foreground truncate">
-                      {command.description}
+    <div
+      data-slash-menu
+      className="fixed z-[9999] w-80 pointer-events-auto"
+      style={{ top: position.top, left: position.left, pointerEvents: 'auto' }}
+      onPointerDownCapture={(e) => {
+        // High-signal debug so we know events hit the overlay
+        console.debug('SlashCommandMenu.wrapper onPointerDownCapture', {
+          target: (e.target as HTMLElement)?.tagName,
+          class: (e.target as HTMLElement)?.className,
+        })
+      }}
+    >
+      <Command shouldFilter={false} className="rounded-lg border bg-popover text-popover-foreground shadow-md">
+        <CommandList
+          className="max-h-64"
+          onPointerDown={(e) => {
+            console.debug('SlashCommandMenu.list onPointerDown')
+          }}
+        >
+          <CommandEmpty>No results found.</CommandEmpty>
+          {Object.entries(groupedCommands).map(([category, commands]) => (
+            <CommandGroup key={category} heading={category}>
+              {commands.map((command) => {
+                return (
+                  <CommandItem
+                    key={command.id}
+                    onSelect={() => {
+                      console.debug("SlashCommandMenu.onSelect (keyboard)", command.id)
+                      onSelect(command)
+                      onClose()
+                    }}
+                    onMouseDown={(e) => {
+                      // Ensure mouse clicks trigger selection without blurring textarea
+                      console.debug("SlashCommandMenu.onMouseDown (mouse)", {
+                        id: command.id,
+                      })
+                      e.preventDefault()
+                      e.stopPropagation()
+                      onSelect(command)
+                      // Defer close so state updates don’t race with detection effect
+                      setTimeout(() => {
+                        onClose()
+                        console.debug("SlashCommandMenu.onMouseDown -> onClose()")
+                      }, 0)
+                    }}
+                    onMouseEnter={() => setHoveredId(command.id)}
+                    onMouseLeave={() => setHoveredId((prev) => (prev === command.id ? null : prev))}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-blue-50 hover:text-blue-900 aria-selected:bg-blue-50 aria-selected:text-blue-900",
+                      hoveredId === command.id && "bg-blue-50 text-blue-900"
+                    )}
+                  >
+                    <div className="flex-shrink-0 text-muted-foreground">
+                      {command.icon}
                     </div>
-                  </div>
-                  <div className="text-xs text-muted-foreground font-mono opacity-60">
-                    {command.id}
-                  </div>
-                </DropdownMenuItem>
-              )
-            })}
-            {category !== 'Creative' && <DropdownMenuSeparator />}
-          </DropdownMenuGroup>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+                    <div className="font-medium text-sm">{command.label}</div>
+                  </CommandItem>
+                )
+              })}
+              <CommandSeparator />
+            </CommandGroup>
+          ))}
+        </CommandList>
+      </Command>
+    </div>
   )
 }

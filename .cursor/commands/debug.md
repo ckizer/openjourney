@@ -49,7 +49,8 @@ Step 9: Test the Solutions
 - If testing is not possible due to resource limitations, clearly summarize the implemented solutions and provide explicit, step-by-step instructions for me to test each solution manually.
 
 Step 10: Log the Bugs
-add useful debug logging to a file called debug_logs.md If the file doesn't exist create it.
+add useful debug logging to a file called debug_logs.md in the root of this project. 
+If the file doesn't exist create it.
 
 ⸻
 
